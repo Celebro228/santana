@@ -11,6 +11,7 @@ pub struct Lang {
     pub screen_usersetup: String,
     pub screen_usersetup_name: String,
     pub screen_usersetup_pass: String,
+    pub screen_installing: String,
 }
 
 impl Lang {
@@ -27,6 +28,7 @@ impl Lang {
             screen_usersetup: "Create user".to_string(),
             screen_usersetup_name: "Name".to_string(),
             screen_usersetup_pass: "Password".to_string(),
+            screen_installing: "Installing".to_string(),
         }
     }
 
@@ -43,6 +45,7 @@ impl Lang {
             screen_usersetup: "Создание пользователя".to_string(),
             screen_usersetup_name: "Имя".to_string(),
             screen_usersetup_pass: "Пароль".to_string(),
+            screen_installing: "Установка".to_string(),
         }
     }
 }

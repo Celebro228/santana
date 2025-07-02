@@ -12,11 +12,12 @@ use ui::ui;
 
 /*
 Задачи:
-Управление дисками:
-Выбор диска
-Выбор тома
-Удаление тома
-Выбор пустого пространства
+Установщик:
+Формат дисков
+Монтирование дисков
+Предустановка
+Установка
+Заверщение
 */
 
 
@@ -190,7 +191,15 @@ fn run(mut terminal: DefaultTerminal) {
                         Editing::Name => app.editing = Some(Editing::Password),
                         Editing::Password => {
                             app.logs.push("User create: ".to_string() + &app.user.name);
+                            app.select_num = 0;
                             app.screen = Screen::Installing;
+                            app.mount_and_format();
+                            app.set_install_list();
+                            for _ in app.install_list.clone() {
+                                terminal.draw(|f| ui(f, &app)).expect("Error draw for install");
+                                app.install();
+                                app.select_num += 1;
+                            }
                         }
                     }
                     KeyCode::Char(value) => match app.editing.clone().expect("Editing is None") {

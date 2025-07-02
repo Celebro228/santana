@@ -153,6 +153,24 @@ pub fn ui(frame: &mut Frame, app: &App) {
             frame.render_widget(name, name_layout);
             frame.render_widget(pass, pass_layout);
         }
+
+        Screen::Installing => {
+            let mut list_items = Vec::<ListItem>::new();
+            for item in &app.install_list {
+                list_items.push(ListItem::new(item.0.clone()));
+            }
+
+            let mut state = ListState::default().with_selected(Some(app.select_num));
+            let list = List::new(list_items)
+                .block(block.title(app.language.screen_installing.clone()))
+                .white()
+                .highlight_style(Style::new().bold().reversed())
+                .highlight_symbol("> ")
+                .repeat_highlight_symbol(true);
+
+            frame.render_stateful_widget(list, main, &mut state);
+        }
+
         _ => {}
     }
 
