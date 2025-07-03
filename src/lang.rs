@@ -1,6 +1,7 @@
 #[derive(Clone)]
 pub struct Lang {
     pub _name: String,
+    pub locale: String,
     pub full_name: String,
     pub screen_language: String,
     pub screen_wifi_select: String,
@@ -18,6 +19,7 @@ impl Lang {
     pub fn en() -> Self {
         Self {
             _name: "en".to_string(),
+            locale: "".to_string(),
             full_name: "English".to_string(),
             screen_language: "Select language".to_string(),
             screen_wifi_select: "Select network".to_string(),
@@ -35,6 +37,7 @@ impl Lang {
     pub fn ru() -> Self {
         Self {
             _name: "ru".to_string(),
+            locale: "ru_RU.UTF-8 UTF-8".to_string(),
             full_name: "Русский".to_string(),
             screen_language: "Выбор языка".to_string(),
             screen_wifi_select: "Выбор сети".to_string(),

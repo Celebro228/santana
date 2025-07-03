@@ -12,12 +12,11 @@ use ui::ui;
 
 /*
 Задачи:
-Установщик:
-Формат дисков
-Монтирование дисков
-Предустановка
-Установка
-Заверщение
+Завершение:
+Добавление пользователя
+Настройка языка
+Конфогурации
+завершение
 */
 
 
@@ -200,6 +199,7 @@ fn run(mut terminal: DefaultTerminal) {
                                 app.install();
                                 app.select_num += 1;
                             }
+                            app.complite();
                         }
                     }
                     KeyCode::Char(value) => match app.editing.clone().expect("Editing is None") {

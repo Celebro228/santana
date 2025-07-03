@@ -1,4 +1,4 @@
-use std::{fs, process::Command};
+use std::{fs::{self, OpenOptions}, process::Command, io::Write};
 
 use crate::lang::{get_langs, Lang};
 
@@ -11,7 +11,6 @@ pub enum Screen {
     Efipart,
     UserSetup,
     Installing,
-    Complete,
 }
 
 #[derive(Clone)]
@@ -358,6 +357,12 @@ FallbackNTP=time.cloudflare.com time.google.com 0.arch.pool.ntp.org 1.arch.pool.
             "sudo".to_string(),
             "networkmanager".to_string(),
         ]));
+        self.install_list.push(("Fonts".to_string(), vec![
+            "ttf-ubuntu-font-family".to_string(),
+            "ttf-hack".to_string(),
+            "ttf-dejavu".to_string(),
+            "ttf-opensans".to_string(),
+        ]));
     }
 
     pub fn install(&mut self) {
@@ -377,6 +382,101 @@ FallbackNTP=time.cloudflare.com time.google.com 0.arch.pool.ntp.org 1.arch.pool.
     }
 
     pub fn complite(&mut self) {
-        
+        Command::new("genfstab")
+            .args(["/mnt", ">>", "/mnt/etc/fstab"])
+            .output()
+            .expect("Failed run genfstab");
+        self.logs.push("Genfstab create for /mnt/etc/fstab".to_string());
+
+        Command::new("arch-chroot")
+            .args(["/mnt"])
+            .output()
+            .expect("Failed run arch-chroot /mnt");
+        Command::new("systemctl")
+            .args(["enable", "NetworkManager"])
+            .output()
+            .expect("Failed enable NetwrokManager for systemctl");
+        self.logs.push("System enable NetworkManager".to_string());
+
+        Command::new("systemctl")
+            .args(["enable", "sddm"])
+            .output()
+            .expect("Failed enable sddm for systemctl");
+        self.logs.push("System enable sddm".to_string());
+
+
+        Command::new("useradd")
+            .args(["-m", &self.user.name])
+            .output()
+            .expect("Failed enable sddm for systemctl");
+        self.logs.push("System add user".to_string());
+
+        Command::new("echo")
+            .args([&format!("\"{}:{}\"", self.user.name, self.user.password), "|", "chpasswd"])
+            .output()
+            .expect("Failed set password for chpasswd");
+        self.logs.push("System set password".to_string());
+
+        Command::new("echo")
+            .args([&format!("\"root:{}\"", self.user.password), "|", "chpasswd"])
+            .output()
+            .expect("Failed set root password for chpasswd");
+        self.logs.push("System set root".to_string());
+
+        let mut file = OpenOptions::new()
+            .append(true)
+            .create(true)
+            .open("/etc/sudoers")
+            .expect("filed to edit file: /etc/sudoers");
+        writeln!(file, "{} ALL=(ALL:ALL) ALL", self.user.name)
+            .expect("Error to add user to file /etc/sudoers");
+        self.logs.push("System set root for user".to_string());
+
+
+        fs::write("/etc/locale.gen", format!("
+en_US.UTF-8 UTF-8
+{}
+", self.language.locale)).expect("Languages save error");
+        self.logs.push("Languages save".to_string());
+
+        fs::write("/etc/locale.conf", "LANG=\"en_US.UTF-8\"")
+            .expect("Language conf save error");
+        self.logs.push("Language conf save".to_string());
+
+        Command::new("locale-gen")
+            .output()
+            .expect("Failed to run locale-gen");
+        self.logs.push("Locale generation succes!".to_string());
+
+        let disk_name = self.disk_list
+            .get(self.disk)
+            .expect("Error to part list for grub-install")
+            .0.clone();
+
+        Command::new("grub-install")
+            .arg("/dev/".to_string() + &disk_name)
+            .output()
+            .expect("Failed to run grub-install");
+        self.logs.push("Grub install succes!".to_string());
+
+        Command::new("grub-mkconfig")
+            .args(["-o", "/boot/grub/grub.cfg"])
+            .output()
+            .expect("Failed to run grub-mkconfig");
+        self.logs.push("Grub config to set".to_string());
+
+        Command::new("exit")
+            .output()
+            .expect("Failed to exit for arch-chroot");
+
+        Command::new("umount")
+            .args(["-R", "/mnt"])
+            .output()
+            .expect("Failed to umount /mnt");
+        self.logs.push("Umount /mnt".to_string());
+
+        Command::new("reboot")
+            .output()
+            .expect("Failed to reboot");
     }
 }

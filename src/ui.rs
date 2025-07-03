@@ -170,8 +170,6 @@ pub fn ui(frame: &mut Frame, app: &App) {
 
             frame.render_stateful_widget(list, main, &mut state);
         }
-
-        _ => {}
     }
 
 
