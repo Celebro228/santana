@@ -1,4 +1,4 @@
-use std::{fs::{self, OpenOptions}, process::Command, io::Write};
+use std::{fs::{self, OpenOptions}, io::Write, process::Command};
 
 use crate::lang::{get_langs, Lang};
 
@@ -160,32 +160,50 @@ FallbackNTP=time.cloudflare.com time.google.com 0.arch.pool.ntp.org 1.arch.pool.
     pub fn set_disk_list(&mut self) {
         if self.disk_list.len() == 0 {
             let output = Command::new("lsblk")
+                .arg("-J")
                 .output()
                 .expect("failed to run lsblk");
             let disk_list_text = String::from_utf8_lossy(&output.stdout);
 
-            let mut disk: usize = 0;
+            let json: serde_json::Value = serde_json::from_str(&disk_list_text)
+                .expect("Json parse disk list error");
 
-            for mut disk_text in disk_list_text.lines().skip(1) {
-                let mut part_check = false;
+            let disk_list = json.get("blockdevices")
+                .expect("Error to get \"blockdevices\" of disk list");
+            let disk_list = disk_list.as_array()
+                .expect("Error \"blockdevices\" is not array");
 
-                if let Some((_, after)) = disk_text.split_once("─") {
-                    disk_text = after;
-                    part_check = true;
-                }
 
-                if let Some((before, _)) = disk_text.split_once(" ") {
-                    if !part_check {
-                        disk += 1;
-                        self.disk_list.push((before.to_string(), Vec::new()));
-                        self.logs.push("Disk detect: ".to_string() + before);
-                    } else {
-                        self.disk_list.get_mut(disk - 1)
-                            .expect("fatal of disk list")
-                            .1.push(before.to_string());
-                        self.logs.push("Part detect: ".to_string() + before);
+            let mut disk_num: usize = 0;
+
+            for disk in disk_list {
+                let disk_name = disk.get("name")
+                    .expect("Error get name is disk")
+                    .as_str()
+                    .expect("Error disk name is not str");
+
+                self.disk_list.push((disk_name.to_string(), Vec::new()));
+                self.logs.push("Disk detect: ".to_string() + &disk_name);
+
+
+                if let Some(part_list) = disk.get("children") {
+                    let part_list = part_list.as_array()
+                        .expect("Error parts is not array");
+
+                    for part in part_list {
+                        let part_name = part.get("name")
+                            .expect("Error get name is part")
+                            .as_str()
+                            .expect("Error part name is not str");
+
+                        self.disk_list.get_mut(disk_num)
+                                .expect("fatal of self disk list")
+                                .1.push(part_name.to_string());
+                        self.logs.push("Part detect: ".to_string() + &part_name);
                     }
                 }
+
+                disk_num += 1;
             }
         }
 
